@@ -18,6 +18,7 @@ function UserDashboard() {
     } else {
       fetchUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   const fetchUsers = () => {
