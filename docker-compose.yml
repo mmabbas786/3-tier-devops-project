@@ -8,8 +8,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: crud_app
-    ports:
-      - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -36,7 +34,7 @@ services:
       DB_PASSWORD: rootpassword
       DB_NAME: crud_app
       DB_SSL: "false"
-      JWT_SECRET: mirzaDevopsSuperSecretKey
+      JWT_SECRET: devopsShackSuperSecretKey
       ADMIN_NAME: "Admin User"
       ADMIN_EMAIL: "admin@example.com"
       ADMIN_PASSWORD: "admin123"
