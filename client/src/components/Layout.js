@@ -23,7 +23,7 @@ function Layout({ children }) {
           <ul className="social-links">
             <li><a className="sidebar-btn" href="https://github.com/mmabbas786/3-tier-devops-project" target="_blank" rel="noopener noreferrer">GitHub</a></li>
             <li><a className="sidebar-btn" href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
-            <li><a className="sidebar-btn" href="#" rel="noopener noreferrer">Portfolio</a></li>
+            <li><a className="sidebar-btn" href="https://github.com/mmabbas786" target="_blank" rel="noopener noreferrer">Portfolio</a></li>
           </ul>
         </aside>
         <main className="main-content fade-in">
