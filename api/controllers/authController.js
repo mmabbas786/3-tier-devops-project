@@ -12,7 +12,7 @@ exports.register = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Missing fields' });
+    return res.status(400).json({ error: 'Missing fields', message: 'Name, email, and password are required' });
   }
 
   try {
@@ -22,28 +22,35 @@ exports.register = async (req, res) => {
       [name, email, hashedPassword, role || 'viewer']
     );
 
-    res.status(201).json({ message: 'User registered', id: result.insertId });
+    res.status(201).json({ message: 'User registered successfully', id: result.insertId });
   } catch (err) {
     console.error('Registration Error:', err);
-    res.status(500).json({ error: 'Registration failed' });
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Email already exists', message: 'A user with this email already exists' });
+    }
+    res.status(500).json({ error: 'Registration failed', message: 'Registration failed. Please try again.' });
   }
 };
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Missing credentials', message: 'Email and password are required' });
+  }
+
   try {
     const results = await query('SELECT * FROM users WHERE email = ?', [email]);
 
     if (results.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid credentials', message: 'Invalid email or password' });
     }
 
     const user = results[0];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid credentials', message: 'Invalid email or password' });
     }
 
     const token = jwt.sign(
@@ -63,7 +70,7 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     console.error('Login Error:', err);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Login failed', message: 'Login failed. Please try again.' });
   }
 };
 

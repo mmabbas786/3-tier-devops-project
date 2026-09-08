@@ -13,11 +13,12 @@ function Login() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    try {
-      await login(form.email, form.password);
+    setError('');
+    const res = await login(form.email, form.password);
+    if (res?.success) {
       navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+    } else {
+      setError(res?.message || 'Login failed');
     }
   };
 
