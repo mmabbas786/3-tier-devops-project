@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || 'Login failed. Please try again.',
+        message: err.response?.data?.message || err.response?.data?.error || 'Login failed. Please try again.',
       };
     }
   };
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || 'Registration failed.',
+        message: err.response?.data?.message || err.response?.data?.error || 'Registration failed.',
       };
     }
   };
