@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const util = require('util');
 
-const SECRET = process.env.JWT_SECRET || 'supersecret'; // ideally from .env
+const SECRET = process.env.JWT_SECRET || 'mirzaDevopsSuperSecretKey';
 
 // Promisify DB query
 const query = util.promisify(db.query).bind(db);

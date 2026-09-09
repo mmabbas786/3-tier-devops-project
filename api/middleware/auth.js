@@ -1,11 +1,16 @@
 const jwt = require('jsonwebtoken');
 
-const SECRET = process.env.JWT_SECRET || 'secretkey';
+const SECRET = process.env.JWT_SECRET || 'mirzaDevopsSuperSecretKey';
 
 // ✅ Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  let token = authHeader;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  } else if (authHeader && authHeader.includes(' ')) {
+    token = authHeader.split(' ')[1];
+  }
 
   if (!token) return res.status(401).json({ message: 'No token provided' });
 
