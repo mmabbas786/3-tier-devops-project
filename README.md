@@ -457,6 +457,62 @@ The application has been deployed on **Amazon Web Services (AWS)** using an EC2 
 
 ---
 
+# Railway Cloud Deployment (Live HTTPS URL)
+
+The repository is configured for 1-click or repository-linked deployment on [Railway.app](https://railway.app) to get instant public HTTPS URLs.
+
+### Step 1: Deploy Database on Railway
+1. In your Railway project, click **+ New** → **Database** → **Add MySQL**.
+2. Railway will automatically provision MySQL and expose standard variables (`MYSQL_URL`, `DATABASE_URL`, `MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`).
+3. The API in `api/models/db.js` automatically detects these variables.
+
+### Step 2: Deploy Backend API Service
+1. Click **+ New** → **GitHub Repo** → select `mmabbas786/3-tier-devops-project`.
+2. In service **Settings**:
+   - Set **Root Directory** to `/api`.
+   - In **Variables**, connect `DATABASE_URL` to reference the MySQL plugin (`${{MySQL.DATABASE_URL}}`), and set `JWT_SECRET=mirzaDevopsSuperSecretKey`.
+3. In **Networking**, click **Generate Domain** to obtain your live API URL (e.g., `https://devops-api-production.up.railway.app`).
+
+### Step 3: Deploy Frontend Client Service
+1. Click **+ New** → **GitHub Repo** → select `mmabbas786/3-tier-devops-project`.
+2. In service **Settings**:
+   - Set **Root Directory** to `/client`.
+   - In **Variables**, set:
+     ```env
+     REACT_APP_API=https://devops-api-production.up.railway.app
+     ```
+3. In **Networking**, click **Generate Domain** to obtain your live frontend URL (e.g., `https://devops-client-production.up.railway.app`).
+
+---
+
+# Kubernetes Deployment (`k8s/`)
+
+Production-ready declarative manifests reside in the `k8s/` directory.
+
+### Manifest Components
+- **`k8s/namespace.yaml`**: Creates the `devops-project` isolated namespace.
+- **`k8s/mysql.yaml`**: Deploys MySQL 8.0 with a 5Gi PersistentVolumeClaim (`mysql-pvc`), Secret credentials, and ClusterIP service.
+- **`k8s/api.yaml`**: Deploys the Node.js API with 2 replicas, liveness/readiness health probes, resource requests/limits, ClusterIP service, and HorizontalPodAutoscaler (`api-hpa`).
+- **`k8s/client.yaml`**: Deploys the React frontend with 2 replicas, health checks, and ClusterIP service.
+- **`k8s/ingress.yaml`**: Nginx Ingress resource routing `/` to the frontend and `/api`, `/health`, and `/metrics` to the API.
+
+### Deploying to a Kubernetes Cluster (Minikube / EKS / K3s)
+```bash
+# 1. Apply all manifests using Kustomize
+kubectl apply -k k8s/
+
+# 2. Verify pods and services
+kubectl get pods -n devops-project
+kubectl get svc -n devops-project
+kubectl get ingress -n devops-project
+
+# 3. Access via Ingress / Port-Forward
+kubectl port-forward svc/api-svc 5000:5000 -n devops-project
+kubectl port-forward svc/client-svc 3000:80 -n devops-project
+```
+
+---
+
 # Screenshots
 
 *(Screenshots can be placed in `docs/screenshots/` and linked below)*
