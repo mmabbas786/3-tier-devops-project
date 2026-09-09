@@ -115,6 +115,9 @@ const healthCheckHandler = async (req, res) => {
   let dbStatus = 'healthy';
   try {
     await db.promise().query('SELECT 1');
+    if (db.isUsingFallback && db.isUsingFallback()) {
+      dbStatus = 'active (in-memory store; attach Railway MySQL for persistent storage)';
+    }
   } catch (err) {
     dbStatus = 'degraded (' + err.message + ')';
   }
