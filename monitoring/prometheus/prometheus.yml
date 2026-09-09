@@ -5,6 +5,11 @@ global:
 rule_files:
   - /etc/prometheus/alert_rules.yml
 
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
@@ -16,5 +21,15 @@ scrape_configs:
     static_configs:
       - targets: ['api:5000']
         labels:
-          environment: 'production'
+          environment: 'local'
           service: 'backend-api'
+
+  - job_name: 'devops-api-live'
+    metrics_path: '/metrics'
+    scheme: 'https'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['3-tier-devops-project-production.up.railway.app:443']
+        labels:
+          environment: 'live-production'
+          service: 'railway-backend-api'

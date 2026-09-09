@@ -95,6 +95,21 @@ services:
     networks:
       - app-network
 
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: 3tier-alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - app-network
+
   grafana:
     image: grafana/grafana:10.3.3
     container_name: 3tier-grafana
@@ -118,6 +133,7 @@ services:
 volumes:
   mysql-data:
   prometheus-data:
+  alertmanager-data:
   grafana-data:
 
 networks:

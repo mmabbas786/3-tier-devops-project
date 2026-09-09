@@ -1,23 +1,43 @@
 groups:
-  - name: api_alerts
+  - name: devops_api_alerts
     rules:
-      - alert: ApiDown
+      - alert: LiveApiDown
+        expr: up{job="devops-api-live"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: live-production-api
+        annotations:
+          summary: "Live Railway Production API is DOWN"
+          description: "Production API instance at https://3-tier-devops-project-production.up.railway.app has been unreachable for more than 1 minute."
+
+      - alert: InternalApiDown
         expr: up{job="devops-api"} == 0
         for: 1m
         labels:
           severity: critical
+          service: backend-api
         annotations:
-          summary: "DevOps REST API instance is DOWN"
-          description: "The API target at {{ $labels.instance }} has been unreachable for more than 1 minute."
+          summary: "Internal DevOps API is DOWN"
+          description: "Internal backend API instance ({{ $labels.instance }}) has been unreachable for more than 1 minute."
 
-      - alert: HighHttpErrorRate
-        expr: (sum(rate(http_requests_total{code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) * 100 > 5
+      - alert: HighHttp5xxErrorRate
+        expr: (sum(rate(http_requests_total{code=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job)) * 100 > 5
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: "High HTTP 5xx error rate detected"
-          description: "HTTP 5xx error rate is above 5% on {{ $labels.instance }} over the last 5 minutes."
+          summary: "Elevated HTTP 5xx error rate detected"
+          description: "HTTP 5xx error rate is above 5% on {{ $labels.job }} ({{ $labels.instance }}) over the last 5 minutes."
+
+      - alert: HighHttpLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 HTTP Request Latency (> 1s)"
+          description: "95th percentile response latency has exceeded 1000ms on {{ $labels.job }} for 2 minutes."
 
       - alert: HighMemoryUsage
         expr: devops_api_process_resident_memory_bytes > 500000000
@@ -25,5 +45,14 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High Memory Usage in DevOps API"
-          description: "API resident memory consumption has exceeded 500MB for 5 minutes."
+          summary: "High Process Memory Usage (> 500MB)"
+          description: "API resident memory consumption has exceeded 500MB on {{ $labels.instance }} for 5 minutes."
+
+      - alert: HighCpuUsage
+        expr: rate(devops_api_process_cpu_seconds_total[2m]) > 0.8
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Usage on DevOps API"
+          description: "CPU utilization has sustained above 80% on {{ $labels.instance }} for 3 minutes."

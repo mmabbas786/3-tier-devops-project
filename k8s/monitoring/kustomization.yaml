@@ -4,9 +4,7 @@ kind: Kustomization
 namespace: devops-project
 
 resources:
-  - namespace.yaml
-  - mysql.yaml
-  - api.yaml
-  - client.yaml
-  - ingress.yaml
-  - monitoring/
+  - alertmanager.yaml
+  - prometheus.yaml
+  - grafana.yaml
+  - dashboard.yaml

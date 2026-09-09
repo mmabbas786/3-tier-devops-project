@@ -483,9 +483,9 @@ The repository is configured for 1-click or repository-linked deployment on [Rai
 
 ---
 
-# Kubernetes Deployment (`k8s/`)
+# Kubernetes & Observability Deployment (`k8s/`)
 
-Production-ready declarative manifests reside in the `k8s/` directory.
+Production-ready declarative manifests reside in the `k8s/` directory, including full microservice orchestration and an in-cluster Prometheus, Alertmanager, and Grafana observability stack.
 
 ### Manifest Components
 - **`k8s/namespace.yaml`**: Creates the `devops-project` isolated namespace.
@@ -493,39 +493,67 @@ Production-ready declarative manifests reside in the `k8s/` directory.
 - **`k8s/api.yaml`**: Deploys the Node.js API with 2 replicas, liveness/readiness health probes, resource requests/limits, ClusterIP service, and HorizontalPodAutoscaler (`api-hpa`).
 - **`k8s/client.yaml`**: Deploys the React frontend with 2 replicas, health checks, and ClusterIP service.
 - **`k8s/ingress.yaml`**: Nginx Ingress resource routing `/` to the frontend and `/api`, `/health`, and `/metrics` to the API.
+- **`k8s/monitoring/alertmanager.yaml`**: Alertmanager deployment and notification routing (Slack, Discord, Webhooks).
+- **`k8s/monitoring/prometheus.yaml`**: Prometheus deployment, RBAC permissions, alerting rules, and dual scrapers (Live Railway API + In-Cluster workloads).
+- **`k8s/monitoring/grafana.yaml`**: Grafana deployment with auto-provisioned Prometheus datasource.
+- **`k8s/monitoring/dashboard.yaml`**: Pre-provisioned 3-tier DevOps telemetry dashboard.
 
 ### Deploying to a Kubernetes Cluster (Minikube / EKS / K3s)
 ```bash
-# 1. Apply all manifests using Kustomize
+# Option 1: Automated deployment script
+./scripts/k8s-deploy.sh
+
+# Option 2: Apply all manifests using Kustomize directly
 kubectl apply -k k8s/
 
-# 2. Verify pods and services
-kubectl get pods -n devops-project
-kubectl get svc -n devops-project
-kubectl get ingress -n devops-project
+# Start port-forwards for all application & monitoring services:
+./scripts/k8s-port-forward.sh
 
-# 3. Access via Ingress / Port-Forward
-kubectl port-forward svc/api-svc 5000:5000 -n devops-project
-kubectl port-forward svc/client-svc 3000:80 -n devops-project
+```bash
+# Verify pods across the devops-project namespace
+kubectl get pods -n devops-project -o wide
 ```
+
+### Kubernetes Workloads & Pods
+![Kubernetes Pods](docs/screenshots/k8s-pods.png)
+<p align="center"><em>Live Kubernetes Deployment & Pods Orchestration (devops-project Namespace)</em></p>
+
+For complete architectural details, notification channel setup, and runbooks, see the [Kubernetes & Observability Guide](docs/K8S_AND_MONITORING_GUIDE.md).
 
 ---
 
 # Screenshots
 
-*(Screenshots can be placed in `docs/screenshots/` and linked below)*
+All screenshots are stored in [`docs/screenshots/`](docs/screenshots/) and document the live system components:
 
 ### 1. Application Dashboard & Login
 ![Application Dashboard](docs/screenshots/app-dashboard.png)
+<p align="center"><em>Live Authenticated React Frontend & User Management Dashboard</em></p>
+
+![Application Login](docs/screenshots/app-login.png)
+<p align="center"><em>Application Login & Authentication Interface</em></p>
 
 ### 2. Jenkins CI/CD Pipeline Execution
 ![Jenkins Pipeline](docs/screenshots/jenkins-pipeline.png)
+<p align="center"><em>Live Jenkins CI Pipeline Execution (Build #14: Git Checkout, Frontend & Backend Compilation, GitLeaks, SonarQube Analysis, Quality Gate, Docker Image Build & Tag, Docker Deploy)</em></p>
 
-### 3. Prometheus Targets & Metrics
+### 3. Prometheus Targets & Alert Rules
 ![Prometheus Targets](docs/screenshots/prometheus-targets.png)
+<p align="center"><em>Live Prometheus Active Targets on AWS Monitoring Server: cadvisor, node-exporter, and prometheus (All UP)</em></p>
+
+![Prometheus Alert Rules](docs/screenshots/prometheus-alerts.png)
+<p align="center"><em>Live Prometheus Alert Rules Active & Evaluating: InstanceDown (Critical), HighCPUUsage, HighMemoryUsage, DiskSpaceLow</em></p>
 
 ### 4. Grafana Monitoring Dashboard
 ![Grafana Dashboard](docs/screenshots/grafana-dashboard.png)
+<p align="center"><em>Live Grafana Observability Dashboard: Node Exporter Telemetry (CPU Utilization, Memory Usage, Disk Space, Network I/O & System Load)</em></p>
 
-### 5. AWS EC2 Instance & Terminal
-![AWS EC2 Terminal](docs/screenshots/aws-ec2.png)
+### 5. Railway Cloud Dashboard
+![Railway Dashboard](docs/screenshots/railway-dashboard.png)
+<p align="center"><em>Live Railway Production Console: 3-Tier DevOps Project Active Service, Successful Deployment, and Public Domain</em></p>
+
+### 6. AWS EC2 Cloud Infrastructure
+![AWS EC2 Console](docs/screenshots/aws-ec2.png)
+<p align="center"><em>AWS EC2 Console: 4 Running Instances (Monitoring, Jenkins-Server, SonarQube-Server, Project-Server)</em></p>
+
+
