@@ -3,6 +3,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
@@ -85,7 +87,27 @@ const apiIndexHandler = (req, res) => {
   });
 };
 
-app.get('/', apiIndexHandler);
+// Check if compiled React frontend exists
+const clientBuildPaths = [
+  path.join(__dirname, 'client_build'),
+  path.join(__dirname, '../client/build'),
+  path.join(__dirname, 'public/client_build')
+];
+const foundClientBuild = clientBuildPaths.find(p => fs.existsSync(p));
+
+if (foundClientBuild) {
+  console.log(`📦 Serving React UI static files from: ${foundClientBuild}`);
+  app.get('/', (req, res, next) => {
+    if (req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html')) {
+      return apiIndexHandler(req, res);
+    }
+    next();
+  });
+  app.use(express.static(foundClientBuild));
+} else {
+  app.get('/', apiIndexHandler);
+}
+
 app.get('/api', apiIndexHandler);
 
 // Health check endpoint (GET /health and GET /api/health)
@@ -132,6 +154,22 @@ app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/users', userRoutes);
+
+if (foundClientBuild) {
+  // SPA fallback for React router routes (e.g. /login, /dashboard, /register)
+  app.get('*', (req, res, next) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/auth') ||
+      req.path.startsWith('/users') ||
+      req.path.startsWith('/health') ||
+      req.path.startsWith('/metrics')
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(foundClientBuild, 'index.html'));
+  });
+}
 
 // 404 handler for undefined routes
 app.use((req, res) => {

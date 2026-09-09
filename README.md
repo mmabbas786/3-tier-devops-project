@@ -426,11 +426,16 @@ Defined in `monitoring/prometheus/alert_rules.yml`:
 
 ---
 
-# AWS Deployment (Optional)
+# Cloud Deployment (Railway & Optional AWS)
 
-The application has been deployed on **Amazon Web Services (AWS)** using an EC2 virtual machine instance.
+The live production application is hosted on **Railway Cloud Platform** providing an automated HTTPS entrypoint and managed cloud database, with optional architecture configurations provided for AWS EC2.
 
-## AWS Architecture
+## Live Public URLs (Railway)
+- **Live Application & React Frontend**: [https://3-tier-devops-project-production.up.railway.app/](https://3-tier-devops-project-production.up.railway.app/)
+- **Live REST API Health Check**: [https://3-tier-devops-project-production.up.railway.app/health](https://3-tier-devops-project-production.up.railway.app/health)
+- **Live Prometheus Metrics**: [https://3-tier-devops-project-production.up.railway.app/metrics](https://3-tier-devops-project-production.up.railway.app/metrics)
+
+## AWS Architecture (Optional Reference)
 - **Cloud Provider**: Amazon Web Services (AWS)
 - **Region**: `us-east-1` (N. Virginia)
 - **Compute**: Amazon EC2 `t3.medium` / `t2.medium`
@@ -444,16 +449,9 @@ The application has been deployed on **Amazon Web Services (AWS)** using an EC2 
   - `Custom TCP` (`3001`): Grafana dashboard UI
 
 ## Services Used
-- **Amazon EC2**: Virtual server hosting the Docker runtime and microservices.
-- **Amazon VPC & Security Groups**: Network firewall rules restricting and permitting ingress traffic.
-- **Elastic IP**: Static public IP allocation.
+- **Railway Cloud Platform**: Automated container orchestration, edge HTTPS ingress, and MySQL relational database.
+- **Amazon EC2 (Optional)**: Virtual server alternative hosting Docker runtime and microservices.
 
-## Public API & Application URLs
-- **Public Frontend UI**: [http://54.87.253.5:3000](http://54.87.253.5:3000) or [http://54.87.253.5](http://54.87.253.5)
-- **Public API Root**: [http://54.87.253.5:5000/](http://54.87.253.5:5000/)
-- **Public API Health Check**: [http://54.87.253.5:5000/health](http://54.87.253.5:5000/health)
-- **Public Prometheus**: [http://54.87.253.5:9090](http://54.87.253.5:9090)
-- **Public Grafana**: [http://54.87.253.5:3001](http://54.87.253.5:3001)
 
 ---
 
