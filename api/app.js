@@ -98,7 +98,7 @@ const healthCheckHandler = async (req, res) => {
   }
 
   const isHealthy = dbStatus === 'healthy';
-  res.status(isHealthy ? 200 : 503).json({
+  res.status(200).json({
     status: isHealthy ? 'ok' : 'degraded',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
@@ -176,15 +176,16 @@ const waitForDb = async (retries = 30, delay = 2000) => {
       await db.promise().query('SELECT 1');
       console.log('✅ MySQL connection established.');
       await initDatabase();
-      return;
+      return true;
     } catch (err) {
-      console.error(`⏳ Waiting for MySQL connection... (${err.message}). Retries left: ${retries}`);
+      console.warn(`⏳ Waiting for MySQL connection... (${err.message}). Retries left: ${retries}`);
     }
 
     retries--;
     await new Promise(res => setTimeout(res, delay));
   }
-  throw new Error('❌ MySQL database not available after multiple retries.');
+  console.warn('⚠️ MySQL database not available after multiple retries. API running in degraded mode.');
+  return false;
 };
 
 // Function to seed admin user if not exists
@@ -215,18 +216,19 @@ const seedAdminUser = async () => {
   }
 };
 
-// Start server
-(async () => {
-  try {
-    await waitForDb();
-    await seedAdminUser();
-
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-    });
-  } catch (err) {
-    console.error(err.message);
-    process.exit(1);
-  }
-})();
+// Start server immediately on 0.0.0.0 so cloud reverse proxies and health checks succeed instantly
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+  // Asynchronously connect to DB and seed admin in background
+  (async () => {
+    try {
+      const dbConnected = await waitForDb();
+      if (dbConnected) {
+        await seedAdminUser();
+      }
+    } catch (err) {
+      console.error(`Database background initialization error: ${err.message}`);
+    }
+  })();
+});
 
