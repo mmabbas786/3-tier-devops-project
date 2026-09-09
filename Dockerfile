@@ -5,6 +5,7 @@ WORKDIR /client
 COPY client/package*.json ./
 RUN npm install
 COPY client/ ./
+ENV REACT_APP_API=/api
 ENV CI=false
 RUN npm run build
 

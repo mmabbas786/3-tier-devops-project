@@ -1,8 +1,12 @@
 // src/axios.js
 import axios from 'axios';
 
+const apiBase = (process.env.REACT_APP_API && !process.env.REACT_APP_API.includes('54.87.253.5'))
+  ? process.env.REACT_APP_API
+  : '/api';
+
 const instance = axios.create({
-  baseURL: process.env.REACT_APP_API || '/api', // Configurable via REACT_APP_API or NGINX/K8s proxy /api
+  baseURL: apiBase,
 });
 
 instance.interceptors.request.use((config) => {
