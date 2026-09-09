@@ -1,0 +1,29 @@
+groups:
+  - name: api_alerts
+    rules:
+      - alert: ApiDown
+        expr: up{job="devops-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DevOps REST API instance is DOWN"
+          description: "The API target at {{ $labels.instance }} has been unreachable for more than 1 minute."
+
+      - alert: HighHttpErrorRate
+        expr: (sum(rate(http_requests_total{code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP 5xx error rate detected"
+          description: "HTTP 5xx error rate is above 5% on {{ $labels.instance }} over the last 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: devops_api_process_resident_memory_bytes > 500000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Usage in DevOps API"
+          description: "API resident memory consumption has exceeded 500MB for 5 minutes."

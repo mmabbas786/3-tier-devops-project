@@ -16,15 +16,142 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Health check
-app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
-app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
+// Prometheus metrics setup
+let register;
+let httpRequestDurationMicroseconds;
+let httpRequestsTotal;
+
+try {
+  const client = require('prom-client');
+  register = new client.Registry();
+  client.collectDefaultMetrics({ register, prefix: 'devops_api_' });
+
+  httpRequestDurationMicroseconds = new client.Histogram({
+    name: 'http_request_duration_seconds',
+    help: 'Duration of HTTP requests in seconds',
+    labelNames: ['method', 'route', 'code'],
+    buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
+  });
+  register.registerMetric(httpRequestDurationMicroseconds);
+
+  httpRequestsTotal = new client.Counter({
+    name: 'http_requests_total',
+    help: 'Total number of HTTP requests',
+    labelNames: ['method', 'route', 'code'],
+  });
+  register.registerMetric(httpRequestsTotal);
+} catch {
+  // prom-client not yet installed locally; fallback will be used
+}
+
+// HTTP Request Duration & Count Tracking Middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    const route = req.baseUrl + (req.route ? req.route.path : req.path);
+    if (httpRequestDurationMicroseconds) {
+      httpRequestDurationMicroseconds.labels(req.method, route, String(res.statusCode)).observe(duration);
+    }
+    if (httpRequestsTotal) {
+      httpRequestsTotal.labels(req.method, route, String(res.statusCode)).inc();
+    }
+  });
+  next();
+});
+
+// Root index endpoint (GET / and GET /api)
+const apiIndexHandler = (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: "Mirza's 3-Tier DevOps REST API is online",
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      root: 'GET /',
+      health: 'GET /health',
+      metrics: 'GET /metrics',
+      auth: {
+        register: 'POST /api/auth/register',
+        login: 'POST /api/auth/login'
+      },
+      users: {
+        list: 'GET /api/users',
+        create: 'POST /api/users',
+        update: 'PUT /api/users/:id',
+        delete: 'DELETE /api/users/:id'
+      }
+    }
+  });
+};
+
+app.get('/', apiIndexHandler);
+app.get('/api', apiIndexHandler);
+
+// Health check endpoint (GET /health and GET /api/health)
+const healthCheckHandler = async (req, res) => {
+  let dbStatus = 'healthy';
+  try {
+    await db.promise().query('SELECT 1');
+  } catch (err) {
+    dbStatus = 'degraded (' + err.message + ')';
+  }
+
+  const isHealthy = dbStatus === 'healthy';
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ok' : 'degraded',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    database: dbStatus,
+    memoryUsage: process.memoryUsage()
+  });
+};
+
+app.get('/health', healthCheckHandler);
+app.get('/api/health', healthCheckHandler);
+
+// Prometheus metrics endpoint (GET /metrics and GET /api/metrics)
+app.get(['/metrics', '/api/metrics'], async (req, res) => {
+  if (register) {
+    res.setHeader('Content-Type', register.contentType);
+    return res.end(await register.metrics());
+  }
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(
+    `# HELP process_uptime_seconds Total uptime\n` +
+    `# TYPE process_uptime_seconds gauge\n` +
+    `process_uptime_seconds ${process.uptime()}\n` +
+    `# HELP process_memory_rss_bytes Resident Set Size\n` +
+    `# TYPE process_memory_rss_bytes gauge\n` +
+    `process_memory_rss_bytes ${process.memoryUsage().rss}\n`
+  );
+});
 
 // Routes (support both direct /api prefix and reverse-proxied stripped paths)
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/users', userRoutes);
+
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    statusCode: 404,
+    message: `Endpoint not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
+// Centralized error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({
+    status: 'error',
+    statusCode: status,
+    message: err.message || 'Internal Server Error'
+  });
+});
 
 // Function to initialize database tables
 const initDatabase = async () => {
